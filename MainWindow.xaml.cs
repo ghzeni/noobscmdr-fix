@@ -25,10 +25,16 @@ namespace NOOBS_CMDR
 {
     public partial class NOOBS_CMDR_Homepage : Window, IDropTarget, INotifyPropertyChanged
     {
-        const string OBS_COMMAND_FILES = "";
+        // OBSCommand folder name inside NOOBSCMDR folder
+        const string OBS_COMMAND_SOURCE_FOLDER = "OBSCommand";
 
-        // Check that all OBSCommand files exist in NOOBS CMDR folder
-        string OBSCommandSourcePath = $"{System.AppDomain.CurrentDomain.BaseDirectory}OBSCommand";
+        // OBSCommand folder name in selected path upon installation
+        const string OBS_COMMAND_TARGET_FOLDER = "OBSCommand";
+
+        static string domain = AppDomain.CurrentDomain.BaseDirectory;
+
+        // Check that all OBSCommand files exist in NOOBS CMDR
+        string OBSCommandSourcePath = $"{domain}{OBS_COMMAND_SOURCE_FOLDER}";
 
         #region INotifyPropertyChanged
 
@@ -124,10 +130,10 @@ namespace NOOBS_CMDR
                         // User selects OK
                         if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
-                            string selectedPath = $"{dlg.SelectedPath}\\OBSCommand";
+                            string selectedPath = $"{dlg.SelectedPath}\\{OBS_COMMAND_TARGET_FOLDER}";
 
                             // Create OBSCommand folder automatically + copy all OBSCommand files
-                            Directory.CreateDirectory($"{dlg.SelectedPath}\\OBSCommand");
+                            Directory.CreateDirectory($"{dlg.SelectedPath}\\{OBS_COMMAND_TARGET_FOLDER}");
 
                             // Copy files to OBSCommand folder
                             this.CopyOBSCommandFiles(files, selectedPath);
@@ -225,12 +231,18 @@ namespace NOOBS_CMDR
             }
 
             string path = exePath.Replace(@"\OBSCommand.exe", "");
+            var obsCommandFiles = this.OBSCommandFiles();
 
-            return
-                File.Exists($"{path}\\OBSCommand.exe")
-                && File.Exists($"{path}\\Newtonsoft.Json.dll")
-                && File.Exists($"{path}\\obs-websocket-dotnet.dll")
-                && File.Exists($"{path}\\websocket-sharp.dll");
+
+            foreach (var file in obsCommandFiles)
+            {
+                if (!File.Exists(file))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void CreateActionTypes()
@@ -254,6 +266,7 @@ namespace NOOBS_CMDR
 
         private String[] OBSCommandFiles()
         {
+            // TODO: add try catch because this will break in case the person deleted their OBSCommand folder but kept the path
             var OBSCommandFiles = Directory.GetFiles(this.OBSCommandSourcePath).Select(f => Path.GetFileName(f));
             return OBSCommandFiles.ToArray();
         }
