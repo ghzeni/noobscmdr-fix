@@ -25,6 +25,10 @@ namespace NOOBS_CMDR
 {
     public partial class NOOBS_CMDR_Homepage : Window, IDropTarget, INotifyPropertyChanged
     {
+        const string OBS_COMMAND_FILES = "";
+
+        // Check that all OBSCommand files exist in NOOBS CMDR folder
+        string OBSCommandSourcePath = $"{System.AppDomain.CurrentDomain.BaseDirectory}OBSCommand";
 
         #region INotifyPropertyChanged
 
@@ -100,11 +104,12 @@ namespace NOOBS_CMDR
 
                     if (result == MessageBoxResult.OK)
                     {
-                        // Check that all OBSCommand files exist in NOOBS CMDR folder
-                        string sourcePath = $"{System.AppDomain.CurrentDomain.BaseDirectory}OBSCommand";
+                        // Get all the files inside NOOBSCMDR/OBSCommand directory.
+                        var files = this.OBSCommandFiles();
 
+                        // Check that all OBSCommand files exist in NOOBS CMDR 
                         // If they don't exist, we can't install OBSCommand
-                        if (!File.Exists($"{sourcePath}\\OBSCommand.exe") || !File.Exists($"{sourcePath}\\Newtonsoft.Json.dll") || !File.Exists($"{sourcePath}\\obs-websocket-dotnet.dll") || !File.Exists($"{sourcePath}\\websocket-sharp.dll"))
+                        if (files.Length == 0)
                         {
                             MessageBox.Show(@"Could not find OBSCommand Files. Please re-download NOOBS CMDR.", "OBSCommand Files Missing", MessageBoxButton.OK, MessageBoxImage.Warning);
                             System.Environment.Exit(1);
@@ -123,10 +128,9 @@ namespace NOOBS_CMDR
 
                             // Create OBSCommand folder automatically + copy all OBSCommand files
                             Directory.CreateDirectory($"{dlg.SelectedPath}\\OBSCommand");
-                            File.Copy($"{sourcePath}\\OBSCommand.exe", $"{selectedPath}\\OBSCommand.exe", true);
-                            File.Copy($"{sourcePath}\\Newtonsoft.Json.dll", $"{selectedPath}\\Newtonsoft.Json.dll", true);
-                            File.Copy($"{sourcePath}\\obs-websocket-dotnet.dll", $"{selectedPath}\\obs-websocket-dotnet.dll", true);
-                            File.Copy($"{sourcePath}\\websocket-sharp.dll", $"{selectedPath}\\websocket-sharp.dll", true);
+
+                            // Copy files to OBSCommand folder
+                            this.CopyOBSCommandFiles(files, selectedPath);
 
                             // Check the environment PATH variable
                             string enviromentPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine);
@@ -248,6 +252,21 @@ namespace NOOBS_CMDR
             CommandTypes.Add(new CommandType("Custom", CommandType.Type.Custom));
         }
 
+        private String[] OBSCommandFiles()
+        {
+            var OBSCommandFiles = Directory.GetFiles(this.OBSCommandSourcePath).Select(f => Path.GetFileName(f));
+            return OBSCommandFiles.ToArray();
+        }
+
+        private bool CopyOBSCommandFiles(String[] files, String selectedPath)
+        {
+            // TODO: add try catch and return false in case catches an error during copying
+            foreach (var file in files)
+            {
+                File.Copy($"{OBSCommandSourcePath}\\{file}", $"{selectedPath}\\{file}", true);
+            }
+            return true;
+        }
         #endregion Functions
 
         #region Page Actions
